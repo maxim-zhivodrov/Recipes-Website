@@ -1,0 +1,558 @@
+openapi: 3.0.0
+info:
+  title: EX3.1
+  description: Recipe API
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+servers:
+- url: https://virtserver.swaggerhub.com/seanav97/ASS3_1/1.0.0
+  description: SwaggerHub API Auto Mocking
+- url: https://virtserver.swaggerhub.com/seanav97/Lesson1_prob2/1.0.0
+  description: SwaggerHub API Auto Mocking
+security:
+- cookieAuth: []
+tags:
+- name: auth
+  description: authentication related routes
+- name: recipes
+  description: user related routes
+- name: users
+  description: recipes related routes
+paths:
+  /recipes/getThreeRandomRecipes:
+    get:
+      tags:
+      - recipes
+      description: returns three random
+      responses:
+        "200":
+          description: JSON Objects containing the preview info of the recipes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipePreview'
+        "400":
+          description: No recipes in inventory
+  /recipes/search/query/{userSearch}/numToShow/{userNum}:
+    get:
+      tags:
+      - recipes
+      description: Search for recipes in the Spoonacular API, the number of results
+        will be determined by the input paramenter.
+      parameters:
+      - name: userSearch
+        in: path
+        description: The search query of the user
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: userNum
+        in: path
+        description: The number of recipes that will be returned
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          default: 5
+          enum:
+          - 5
+          - 10
+          - 15
+      - name: cuisine
+        in: query
+        description: Filter resaults by input cuisine
+        required: false
+        style: form
+        explode: true
+        schema:
+          $ref: '#/components/schemas/Cuisine'
+      - name: diet
+        in: query
+        description: Filter resaults by input diet
+        required: false
+        style: form
+        explode: true
+        schema:
+          $ref: '#/components/schemas/Diet'
+      - name: intolerance
+        in: query
+        description: Filter resaults by input intolerance
+        required: false
+        style: form
+        explode: true
+        schema:
+          $ref: '#/components/schemas/Intolerance'
+      responses:
+        "200":
+          description: search successful!
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipePreview'
+        "204":
+          description: No recipes found for the inserted query
+  /users/userRecipeInfo/{recipeIDs}:
+    get:
+      tags:
+      - users
+      description: Get the user info about the input recipes
+      parameters:
+      - name: recipeIDs
+        in: path
+        description: Rcipes id array
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: array
+          items:
+            type: integer
+      responses:
+        "200":
+          description: Object with the user info for each of the recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties:
+                    required:
+                    - inFavorites
+                    - watched
+                    type: object
+                    properties:
+                      watched:
+                        type: boolean
+                      inFavorites:
+                        type: boolean
+                  description: User's info for the recipes, returns a map of key-
+                    recipeID, value-userInfo.
+                  example:
+                    "10":
+                      watched: true
+                      inFavorites: true
+      security:
+      - cookieAuth: []
+  /recipes/recipePage/recipeID/{recipeID}:
+    get:
+      tags:
+      - recipes
+      description: JSON Objects containing the full info of a recipe
+      parameters:
+      - name: recipeID
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          description: The id of the recipe
+          example: 49216
+      responses:
+        "200":
+          description: A JSON object containing the full info of the ricipe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeFull'
+        "400":
+          description: bad equest
+  /auth/register:
+    post:
+      tags:
+      - auth
+      description: a JSON object containing the user info
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInfo'
+        required: true
+      responses:
+        "201":
+          description: The user has been created
+        "409":
+          description: Username taken
+  /auth/login:
+    post:
+      tags:
+      - auth
+      description: a JSON object containing the username and the password
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/body'
+        required: true
+      responses:
+        "200":
+          description: user authenticated
+          headers:
+            Set-Cookie:
+              style: simple
+              explode: false
+              schema:
+                type: string
+                example: session=s97sdbfhwkdfsd87fs24rwr
+        "401":
+          description: Username or Password incorrect
+  /users/addRecipeToFavs:
+    post:
+      tags:
+      - users
+      description: JSON object that includes the recipeID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/body_1'
+      responses:
+        "201":
+          description: The recipe has been added to favorites!
+        "409":
+          description: The recipe already in favorites!
+      security:
+      - cookieAuth: []
+  /users/watchRecipe:
+    post:
+      tags:
+      - users
+      description: JSON object that includes the recipeID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/body_2'
+      responses:
+        "201":
+          description: watch attribute updated!
+      security:
+      - cookieAuth: []
+  /users/favorites:
+    get:
+      tags:
+      - users
+      description: JSON objects containing the preview info about the user's favorite
+        recipes
+      responses:
+        "200":
+          description: favorite recipes found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipePreview'
+      security:
+      - cookieAuth: []
+  /users/personalRecipes:
+    get:
+      tags:
+      - users
+      description: JSON objects containing the preview info about the user's personal
+        recipes
+      responses:
+        "200":
+          description: personal recipes found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipePreview'
+      security:
+      - cookieAuth: []
+  /users/personalRecipePage/recipeID/{recipeID}:
+    get:
+      tags:
+      - users
+      description: JSON object containing the full info about a personal recipe
+      parameters:
+      - name: recipeID
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          description: The id of the recipe
+          example: 57E15734-5840-4504-90BC-226E7DBF68E6
+      responses:
+        "200":
+          description: A JSON object containing the full info of the ricipe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeFull'
+        "400":
+          description: bad equest
+      security:
+      - cookieAuth: []
+  /users/familyRecipes:
+    get:
+      tags:
+      - users
+      description: JSON objects containing the info about the user's family recipes
+      responses:
+        "200":
+          description: family recipes found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipeFamily'
+      security:
+      - cookieAuth: []
+  /users/lastWatchedRecipes:
+    get:
+      tags:
+      - users
+      description: JSON objects containing the preview info about the last 3 recipes
+        the user watched
+      responses:
+        "200":
+          description: recipes found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipePreview'
+        "400":
+          description: No watched recipes for the user
+      security:
+      - cookieAuth: []
+components:
+  schemas:
+    RecipePreview:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: The unique identifier of a recipe
+        title:
+          type: string
+          description: The title of the recipe
+          example: grandmas recipe
+        readyInMinutes:
+          type: integer
+          description: The total making time in minutes
+          example: 60
+        aggregateLikes:
+          type: integer
+          example: 40
+        vegetarian:
+          type: boolean
+          example: false
+        vegan:
+          type: boolean
+          example: false
+        glutenFree:
+          type: boolean
+          example: false
+        image:
+          type: string
+          description: The recipe image url
+          example: https://www.bbcgoodfood.com/sites/default/files/recipe-collections/collection-image/2013/05/stuffed-pasta-bake-bolognese.jpg
+      description: The details that should be shown in the preview of the recipe
+    RecipeFull:
+      type: object
+      properties:
+        previewItems:
+          $ref: '#/components/schemas/RecipePreview'
+        ingredients:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ingredient'
+        instructions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Instruction'
+        numOfDiners:
+          type: integer
+          description: Number of people the recipe is for
+          example: 2
+      description: The entire details about the recipe
+    RecipeFamily:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: The unique identifier of a recipe
+        title:
+          type: string
+          description: The title of the recipe
+          example: grandmas recipe
+        image:
+          type: string
+          description: The recipe image url
+          example: https://www.bbcgoodfood.com/sites/default/files/recipe-collections/collection-image/2013/05/stuffed-pasta-bake-bolognese.jpg
+        familyMember:
+          type: string
+          example: mother
+        specialOccasion:
+          type: string
+          example: birthday
+        ingredients:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ingredient'
+        instructions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Instruction'
+      description: The entire details about a family recipe
+    UserInfo:
+      type: object
+      properties:
+        username:
+          type: string
+          example: admin
+        password:
+          type: string
+          example: password
+        firstname:
+          type: string
+          example: beni
+        lastname:
+          type: string
+          example: goren
+        country:
+          type: string
+          example: USA
+        email:
+          type: string
+          example: beni@gmail.com
+        image:
+          type: string
+          example: https://www.bbcgoodfood.com/sites/default/files/recipe-collections/collection-image/2013/05/stuffed-pasta-bake-bolognese.jpg
+    inline_response_200:
+      type: object
+      properties:
+        information:
+          type: string
+    Instruction:
+      type: object
+      properties:
+        instructionNum:
+          type: integer
+          example: 1
+        instructionCont:
+          type: string
+          example: put the salt in
+    Ingredient:
+      type: object
+      properties:
+        ingridient_name:
+          type: string
+          example: salt
+        unit:
+          type: string
+          example: tbsp
+        amount:
+          type: integer
+          example: 4
+    Cuisine:
+      type: string
+      enum:
+      - African
+      - American
+      - British
+      - Cajun
+      - Caribbean
+      - Chinese
+      - Eastern European
+      - European
+      - French
+      - German
+      - Greek
+      - Indian
+      - Irish
+      - Italian
+      - Japanese
+      - Jewish
+      - Korean
+      - Latin American
+      - Mediterranean
+      - Mexican
+      - Middle Eastern
+      - Nordic
+      - Southern
+      - Spanish
+      - Thai
+      - Vietnamese
+    Diet:
+      type: string
+      enum:
+      - Gluten Free
+      - Ketogenic
+      - Vegetarian
+      - Lacto-Vegetarian
+      - Ovo-Vegetarian
+      - Vegan
+      - Pescetarian
+      - Paleo
+      - Primal
+      - Whole30
+    Intolerance:
+      type: string
+      enum:
+      - Dairy
+      - Egg
+      - Gluten
+      - Grain
+      - Peanut
+      - Seafood
+      - Sesame
+      - Shellfish
+      - Soy
+      - Sulfite
+      - Tree Nut
+      - Wheat
+    body:
+      type: object
+      properties:
+        username:
+          maxLength: 8
+          minLength: 3
+          type: string
+          description: contains only letters
+        password:
+          maxLength: 10
+          minLength: 5
+          type: string
+          description: contains letters with a least 1 numeric charecter and 1 special
+            charecter
+      example:
+        username: sean
+        password: cool!!12
+    body_1:
+      type: object
+      properties:
+        recipeID:
+          type: integer
+          description: the recipe id
+          example: 246815
+    body_2:
+      type: object
+      properties:
+        recipeID:
+          type: integer
+          description: the recipe id
+          example: 24626
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      name: JSESSIONID
+      in: cookie
